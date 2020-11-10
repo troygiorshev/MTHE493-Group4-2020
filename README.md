@@ -2,3 +2,4 @@
 
 Contributors
 - Emily Arkell
+- Sabrina Barnes
