@@ -56,6 +56,14 @@ def init_nodes():
         node[1] = 10-tmp
 
 
+def set_delta(nodes,neighbors):
+    '''Set delta for each time'''
+    sum_R = 0
+    for node in range(NUM_NODES):
+        sum_R += nodes[node][0]
+    return int(sum_R/neighbors)
+
+
 def main():
     global nodes
     '''Main setup and loop'''
@@ -84,21 +92,24 @@ def main():
     plt.show()
 
     # Loop
-    for i in range(10):
+    for j in range(10):
         print()
         new_nodes = nodes.copy() # Careful, copy the array!
         for i in range(NUM_NODES):
             # Make the super node
             super_node = [0,0]
+            neighbors = 0
             for neighbor in G.neighbors(i):
                 super_node[0] += nodes[neighbor][0]
                 super_node[1] += nodes[neighbor][1]
+                neighbors += 1
             # Draw from the super node
             rng = random.random()
             ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
-            new_nodes[i][ball] += 1
+            delta = set_delta(new_nodes,neighbors)
+            new_nodes[i][ball] += delta
         # I'm not sure this needs to be a copy, better safe than sorry
-        nodes = new_nodes.copy() 
+        nodes = new_nodes.copy()
         print(nodes)
 
     # Print Result
