@@ -12,7 +12,9 @@ from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
 
-from colorsys import hls_to_rgb
+from matplotlib import cm
+from collections import OrderedDict
+cmaps = OrderedDict()
 
 # Other imports maybe we'll use one day
 import datetime as dt
@@ -89,15 +91,15 @@ def main():
         print(f"{tmp:2.0f}%")
 
 
-    # Show network
+    # Show network before
     print()
-    nx.draw(G, node_size = 50, node_color = prop_before, cmap=plt.cm.Reds, edgecolors = 'black')
+    nx.draw(G, node_size = 80, node_color = prop_before, cmap=plt.cm.Reds, edgecolors = 'black')
     plt.show()
 
     # Loop
     for j in range(10):
         print()
-        new_nodes = nodes.copy() # Careful, copy the array!
+        new_nodes = nodes.copy() # Copy the array
         for i in range(NUM_NODES):
             # Make the super node
             super_node = [0,0]
@@ -111,6 +113,11 @@ def main():
             ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
             delta = set_delta(new_nodes,neighbors)
             new_nodes[i][ball] += delta
+            #proportions = []
+            #proportions.append(100 * new_nodes[i][0] / (new_nodes[i][0] + new_nodes[i][1]))
+            #print()
+            #nx.draw(G, node_size=50, node_color=proportions, cmap=plt.cm.Reds, edgecolors='black')
+            #plt.show()
         # I'm not sure this needs to be a copy, better safe than sorry
         nodes = new_nodes.copy()
         print(nodes)
@@ -121,11 +128,16 @@ def main():
     for val in prop_before:
         print(f"{val:2.0f}%")
 
-    print()
-
     print("Proportion of Red After")
+    prop_after = []
     for node in nodes:
-        print(f"{100*node[0]/(node[0] + node[1]):2.0f}%")
+        prop_after.append(100 * node[0] / (node[0] + node[1]))
+        print(f"{tmp:2.0f}%")
+
+    # Show network after 10 time steps
+    print()
+    nx.draw(G, node_size = 80, node_color = prop_before, cmap=plt.cm.Reds, edgecolors = 'black')
+    plt.show()
 
 if __name__ == "__main__":
     main()
