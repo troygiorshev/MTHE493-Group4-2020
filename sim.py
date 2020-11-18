@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
 
+from colorsys import hls_to_rgb
+
 # Other imports maybe we'll use one day
 import datetime as dt
 import multiprocessing as mp
@@ -20,7 +22,7 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
-NUM_NODES = 8
+NUM_NODES = 23
 
 # Values of each node.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
@@ -86,9 +88,10 @@ def main():
         prop_before.append(tmp)
         print(f"{tmp:2.0f}%")
 
+
     # Show network
     print()
-    nx.draw(G, with_labels='true')
+    nx.draw(G, node_size = 50, node_color = prop_before, cmap=plt.cm.Reds, edgecolors = 'black')
     plt.show()
 
     # Loop
