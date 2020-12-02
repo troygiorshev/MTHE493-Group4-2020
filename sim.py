@@ -8,6 +8,7 @@ Using networkx for the graph
 
 import random
 
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
@@ -71,6 +72,7 @@ def main():
     '''Main setup and loop'''
     # Setup
     G = ba_graph()
+    pos = nx.spring_layout(G)
     init_nodes()
 
     # Check
@@ -88,10 +90,16 @@ def main():
         prop_before.append(tmp)
         print(f"{tmp:2.0f}%")
 
+    # Fix Colorbar
+    norm = mpl.colors.Normalize(vmin=0, vmax=100)
 
     # Show network
     print()
-    nx.draw(G, node_size = 50, node_color = prop_before, cmap=plt.cm.Reds, edgecolors = 'black')
+    nx.draw_networkx_edges(G, pos)
+    test = nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop_before, cmap=plt.cm.Reds, edgecolors='black')
+    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
+    cbar.set_label("Proportion of Red")
+    plt.title("Before")
     plt.show()
 
     # Loop
@@ -124,8 +132,19 @@ def main():
     print()
 
     print("Proportion of Red After")
+    prop_after = []
     for node in nodes:
-        print(f"{100*node[0]/(node[0] + node[1]):2.0f}%")
+        tmp = 100*node[0]/(node[0] + node[1])
+        prop_after.append(tmp)
+        print(f"{tmp:2.0f}%")
+
+    # Show network
+    nx.draw_networkx_edges(G, pos)
+    test = nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop_after, cmap=plt.cm.Reds, edgecolors='black')
+    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
+    cbar.set_label("Proportion of Red")
+    plt.title("After")
+    plt.show()
 
 if __name__ == "__main__":
     main()
