@@ -95,6 +95,9 @@ def main():
 
     # Show network
     print()
+    print(nx.info(G))
+    print(f"Density: {nx.density(G)}")
+    print(f"Diameter: {nx.diameter(G)}")
     nx.draw_networkx_edges(G, pos)
     test = nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop_before, cmap=plt.cm.Reds, edgecolors='black')
     cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
