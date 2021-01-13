@@ -9,6 +9,7 @@ Using networkx for the graph
 import random
 
 import matplotlib as mpl
+from matplotlib import animation as ani
 from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
@@ -88,6 +89,33 @@ def show_network(G, pos, prop):
     cbar.set_label("Proportion of Red")
 
 
+def updateFunc(step, G, pos):
+    global nodes
+    print()
+    plt.clf()   # Without this, the colorbars act all weird
+    new_nodes = nodes.copy() # Careful, copy the array!
+    for i in range(NUM_NODES):
+        # Make the super node
+        super_node = [0,0]
+        neighbors = 0
+        for neighbor in G.neighbors(i):
+            super_node[0] += nodes[neighbor][0]
+            super_node[1] += nodes[neighbor][1]
+            neighbors += 1
+        # Draw from the super node
+        rng = random.random()
+        ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
+        delta = set_delta(new_nodes,neighbors)
+        new_nodes[i][ball] += delta
+    # I'm not sure this needs to be a copy, better safe than sorry
+    nodes = new_nodes.copy()
+    # Print
+    print(nodes)
+    prop_current = calculate_proportions()
+    show_network(G, pos, prop_current)
+    plt.title(f"Step {step+1}")
+    #plt.show()
+
 
 def main():
     global nodes
@@ -108,8 +136,6 @@ def main():
     print("Proportion of Red Before")
     prop_before = calculate_proportions(print_out=True)
 
-    # Fix Colorbar
-
     # Show network
     print()
     print(nx.info(G))
@@ -122,30 +148,9 @@ def main():
     plt.show()
 
     # Loop
-    for j in range(10):
-        print()
-        new_nodes = nodes.copy() # Careful, copy the array!
-        for i in range(NUM_NODES):
-            # Make the super node
-            super_node = [0,0]
-            neighbors = 0
-            for neighbor in G.neighbors(i):
-                super_node[0] += nodes[neighbor][0]
-                super_node[1] += nodes[neighbor][1]
-                neighbors += 1
-            # Draw from the super node
-            rng = random.random()
-            ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
-            delta = set_delta(new_nodes,neighbors)
-            new_nodes[i][ball] += delta
-        # I'm not sure this needs to be a copy, better safe than sorry
-        nodes = new_nodes.copy()
-        # Print
-        print(nodes)
-        prop_current = calculate_proportions()
-        show_network(G, pos, prop_current)
-        plt.title(f"Step {j}")
-        plt.show()
+    fig = plt.figure()
+    animator = ani.FuncAnimation(fig, updateFunc, fargs=(G,pos), interval=1000, frames=10, repeat=False)
+    plt.show()
 
 
     # Print Result
@@ -159,10 +164,13 @@ def main():
     print("Proportion of Red After")
     prop_after = calculate_proportions(print_out=True)
 
+    print("Got here")
+
     # Show network
     show_network(G, pos, prop_after)
     plt.title("After")
     plt.show()
+
 
 if __name__ == "__main__":
     main()
