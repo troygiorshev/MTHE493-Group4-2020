@@ -67,6 +67,28 @@ def set_delta(nodes,neighbors):
     return int(sum_R/neighbors)
 
 
+def calculate_proportions(print_out=False):
+    global nodes
+    prop = []
+    for node in nodes:
+        tmp = 100*node[0]/(node[0] + node[1])
+        prop.append(tmp)
+        if (print_out):
+            print(f"{tmp:2.0f}%")
+    return prop
+
+
+def show_network(G, pos, prop):
+    # Fix the colorbar
+    norm = mpl.colors.Normalize(vmin=0, vmax=100)
+    # Draw
+    nx.draw_networkx_edges(G, pos)
+    nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop, cmap=plt.cm.Reds, edgecolors='black')
+    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
+    cbar.set_label("Proportion of Red")
+
+
+
 def main():
     global nodes
     '''Main setup and loop'''
@@ -84,24 +106,18 @@ def main():
     print()
 
     print("Proportion of Red Before")
-    prop_before = []
-    for node in nodes:
-        tmp = 100*node[0]/(node[0] + node[1])
-        prop_before.append(tmp)
-        print(f"{tmp:2.0f}%")
+    prop_before = calculate_proportions(print_out=True)
 
     # Fix Colorbar
-    norm = mpl.colors.Normalize(vmin=0, vmax=100)
 
     # Show network
     print()
     print(nx.info(G))
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
-    nx.draw_networkx_edges(G, pos)
-    test = nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop_before, cmap=plt.cm.Reds, edgecolors='black')
-    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
-    cbar.set_label("Proportion of Red")
+
+    # Current Status
+    show_network(G, pos, prop_before)
     plt.title("Before")
     plt.show()
 
@@ -124,7 +140,13 @@ def main():
             new_nodes[i][ball] += delta
         # I'm not sure this needs to be a copy, better safe than sorry
         nodes = new_nodes.copy()
+        # Print
         print(nodes)
+        prop_current = calculate_proportions()
+        show_network(G, pos, prop_current)
+        plt.title(f"Step {j}")
+        plt.show()
+
 
     # Print Result
     print()
@@ -135,17 +157,10 @@ def main():
     print()
 
     print("Proportion of Red After")
-    prop_after = []
-    for node in nodes:
-        tmp = 100*node[0]/(node[0] + node[1])
-        prop_after.append(tmp)
-        print(f"{tmp:2.0f}%")
+    prop_after = calculate_proportions(print_out=True)
 
     # Show network
-    nx.draw_networkx_edges(G, pos)
-    test = nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop_after, cmap=plt.cm.Reds, edgecolors='black')
-    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
-    cbar.set_label("Proportion of Red")
+    show_network(G, pos, prop_after)
     plt.title("After")
     plt.show()
 
