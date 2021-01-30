@@ -25,6 +25,9 @@ import seaborn as sns
 #random.seed(1234)   # Set random seed for reproducability
 
 NUM_NODES = 23
+PROPORTION_S_THOUGHTS = 0.16
+S_THOUGHTS_THRESHOLD = 0.7
+S_THRESHOLD = 0.9
 
 # Values of each node.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
@@ -51,13 +54,19 @@ def connected_graph():
 def ba_graph():
     return nx.extended_barabasi_albert_graph(NUM_NODES, 2, 0, 0)
 
+def adjust_for_real_stats():
+    return NUM_NODES*PROPORTION_S_THOUGHTS
 
 def init_nodes():
+    num_unhealthy = int(adjust_for_real_stats())
+    for node in nodes[0:num_unhealthy - 1]:
+        node[0] = int(10 * S_THOUGHTS_THRESHOLD)
+        node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
     '''Initialize each node with 10 balls, with between 0 and 5 red balls'''
-    for node in nodes:
-        tmp = random.randint(0,5)   # 0 to 5 inclusive
+    for node in nodes[num_unhealthy:]:
+        tmp = random.randint(0, 5)  # 0 to 5 inclusive
         node[0] = tmp
-        node[1] = 10-tmp
+        node[1] = 10 - tmp
 
 
 def set_delta(nodes,neighbors):
