@@ -14,6 +14,11 @@ from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
 
+#imports for caveman graph
+import itertools
+import math
+from networkx.utils import py_random_state
+
 from colorsys import hls_to_rgb
 
 # Other imports maybe we'll use one day
@@ -24,10 +29,12 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
-NUM_NODES = 23
+NUM_NODES = 150
 PROPORTION_S_THOUGHTS = 0.16
 S_THOUGHTS_THRESHOLD = 0.7
 S_THRESHOLD = 0.9
+
+NUM_NEIGHBOURHOODS = 10
 
 # Values of each node.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
@@ -48,11 +55,18 @@ def connected_graph():
         [1,1,0,1,1],
         [1,1,1,0,1],
         [1,1,1,1,0],
+
     ])
     return nx.from_numpy_array(adj)
 
+'''Not using this for now'''
 def ba_graph():
     return nx.extended_barabasi_albert_graph(NUM_NODES, 2, 0, 0)
+
+def clique_graph():
+    '''Relaxed caveman graph returns a graph with `l` cliques of size `k`. Edges are
+    then randomly rewired with probability `p` to link different cliques'''
+    return nx.relaxed_caveman_graph(NUM_NEIGHBOURHOODS, int(NUM_NODES/NUM_NEIGHBOURHOODS), 0.5, seed=None)
 
 def adjust_for_real_stats():
     return NUM_NODES*PROPORTION_S_THOUGHTS
@@ -62,7 +76,7 @@ def init_nodes():
     for node in nodes[0:num_unhealthy - 1]:
         node[0] = int(10 * S_THOUGHTS_THRESHOLD)
         node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
-    '''Initialize each node with 10 balls, with between 0 and 5 red balls'''
+    '''Initialize rest of nodes with between 0 and 5 red balls'''
     for node in nodes[num_unhealthy:]:
         tmp = random.randint(0, 5)  # 0 to 5 inclusive
         node[0] = tmp
@@ -130,7 +144,7 @@ def main():
     global nodes
     '''Main setup and loop'''
     # Setup
-    G = ba_graph()
+    G = clique_graph()
     pos = nx.spring_layout(G)
     init_nodes()
 
@@ -172,8 +186,6 @@ def main():
 
     print("Proportion of Red After")
     prop_after = calculate_proportions(print_out=True)
-
-    print("Got here")
 
     # Show network
     show_network(G, pos, prop_after)
