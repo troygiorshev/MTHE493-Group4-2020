@@ -24,11 +24,13 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
-NUM_NODES = 23
+NUM_NODES = 1500
+PROPORTION_S_THOUGHTS = 0.16
+S_THOUGHTS_THRESHOLD = 0.7
+S_THRESHOLD = 0.9
 
 # Values of each node.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
-
 
 def check_setup(G):
     '''Check that the variables make sense with each other.  Graph G'''
@@ -47,6 +49,95 @@ def connected_graph():
         [1,1,1,1,0],
     ])
     return nx.from_numpy_array(adj)
+
+def fill_houses():
+    ROWS = 13
+    COLS = 30
+    # Houses by number of bedrooms
+    layout = np.array([
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,4,3,3,3,3,3,3,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,4,5,5,5,5,4,3,3,3,3,3,3,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,4,3,3,3,3,3,3,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,4,3,3,3,3,3,3,2,2,2,2],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,4,3,3,3,3,3,3,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1],
+        [1,2,2,2,2,3,3,3,3,3,3,4,4,4,5,5,5,5,5,3,3,3,3,3,3,2,2,2,2,1]
+        ])
+    # Houses by number of people in them
+    houses = np.full_like(layout, 0)
+
+    people_left = NUM_NODES
+    # First, fill every bedroom with a person
+    for row, row_of_lots  in enumerate(layout):
+        for col, lot in enumerate(row_of_lots):
+            houses[row,col] = lot
+            people_left -= lot
+    
+    # Randomly empty 5(ish) interior houses
+    for _ in range(5):
+        row = random.randint(1, ROWS-2)
+        col = random.randint(1, COLS-2)
+        people_left += houses[row,col]
+        houses[row,col] = 0
+
+    # Keep adding people randomly to the 4 and 5 person houses
+    # While ensuring that no house goes over 15
+    while people_left > 0:
+        # This is a terribly slow way to do this
+        # But it still happens pretty much instantly
+        row = random.randint(0, ROWS-1)
+        col = random.randint(0, COLS-1)
+        if layout[row,col] < 4:
+            continue
+        if houses[row,col] >= 15:
+            continue
+        houses[row,col] += 1
+        people_left -= 1
+    
+    #print(houses)
+
+    # TODO surely there's a clearer way to initialize a 2x2 array...
+    subgraphs = [[0 for _ in range(COLS)] for _ in range(ROWS)]
+
+    for row, row_of_houses in enumerate(houses):
+        for col, num_residents in enumerate(row_of_houses):
+            if num_residents != 0:
+                subgraphs[row][col] = nx.complete_graph(num_residents)
+            else:
+                subgraphs[row][col] = nx.null_graph()
+
+    subgraphs_flat = []
+    name_list = []
+    for i, row_of_subgraphs in enumerate(subgraphs):
+        for j, subgraph in enumerate(row_of_subgraphs):
+            if len(subgraph) > 0:   # Dont add the empty houses
+                subgraphs_flat.append(subgraph)
+                name_list.append(f'h{i},{j}-')
+
+    G = nx.union_all(subgraphs_flat, name_list)
+
+    for i in range(ROWS):
+        for j in range(COLS):
+            if G.has_node(f'h{i},{j}-0'):
+                if G.has_node(f'h{i+1},{j}-0'):
+                    G.add_edge(f'h{i},{j}-0', f'h{i+1},{j}-0')
+                if G.has_node(f'h{i},{j+1}-0'):
+                    G.add_edge(f'h{i},{j}-0', f'h{i},{j+1}-0')
+
+    #nx.draw_networkx(G)     # This takes a few seconds...
+    #plt.show()
+
+    return nx.convert_node_labels_to_integers(G)
+
+
+# add up _____
+#compute connectivity i.e. average degree (density of graph)
 
 def ba_graph():
     return nx.extended_barabasi_albert_graph(NUM_NODES, 2, 0, 0)
@@ -121,7 +212,8 @@ def main():
     global nodes
     '''Main setup and loop'''
     # Setup
-    G = ba_graph()
+    #G = ba_graph()
+    G = fill_houses()
     pos = nx.spring_layout(G)
     init_nodes()
 
@@ -170,7 +262,6 @@ def main():
     show_network(G, pos, prop_after)
     plt.title("After")
     plt.show()
-
 
 if __name__ == "__main__":
     main()
