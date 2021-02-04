@@ -151,12 +151,13 @@ def init_nodes():
         node[1] = 10-tmp
 
 
-def set_delta(nodes,neighbors):
-    '''Set delta for each time'''
+def set_delta(neighbors):
+    '''Set delta for each time.  Neighbors here should include the given node'''
+    global nodes
     sum_R = 0
-    for node in range(NUM_NODES):
+    for node in neighbors:
         sum_R += nodes[node][0]
-    return int(sum_R/neighbors)
+    return int(sum_R/len(neighbors))
 
 
 def calculate_proportions(print_out=False):
@@ -187,16 +188,17 @@ def updateFunc(step, G, pos):
     new_nodes = nodes.copy() # Careful, copy the array!
     for i in range(NUM_NODES):
         # Make the super node
+        # Remember "neighbors" for us includes the node
+        neighbors = list(G[i])
+        neighbors.append(i)
         super_node = [0,0]
-        neighbors = 0
-        for neighbor in G.neighbors(i):
+        for neighbor in neighbors:
             super_node[0] += nodes[neighbor][0]
             super_node[1] += nodes[neighbor][1]
-            neighbors += 1
         # Draw from the super node
         rng = random.random()
         ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
-        delta = set_delta(new_nodes,neighbors)
+        delta = set_delta(neighbors)
         new_nodes[i][ball] += delta
     # I'm not sure this needs to be a copy, better safe than sorry
     nodes = new_nodes.copy()
