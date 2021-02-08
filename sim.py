@@ -24,13 +24,7 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
-<<<<<<< HEAD
-
 NUM_NODES = 150
-
-=======
-NUM_NODES = 150
->>>>>>> sabrina
 PROPORTION_S_THOUGHTS = 0.16
 S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
 S_THRESHOLD = 0.9
@@ -157,19 +151,23 @@ def clique_graph():
     then randomly rewired with probability `p` to link different cliques'''
     return nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
 
-def adjust_for_real_stats():
-    return NUM_NODES*PROPORTION_S_THOUGHTS
+def define_risk_levels():
+    proportionRiskLevel = {}
+    proportionRiskLevel[1] = 0.2
+    proportionRiskLevel[2] = 0.2
+    proportionRiskLevel[3] = NUM_NODES*PROPORTION_S_THOUGHTS
+    proportionRiskLevel[4] = 0.2
+    at_risk = sum(proportionRiskLevel.values())
+    proportionRiskLevel[0] = 1 - at_risk
+    return proportionRiskLevel
 
 def init_nodes():
-    num_unhealthy = int(adjust_for_real_stats())
+    riskLevels = define_risk_levels()
+    num_unhealthy = int(riskLevels[4]*NUM_NODES)
     for node in nodes[0:num_unhealthy - 1]:
         node[0] = int(10 * S_THOUGHTS_THRESHOLD)
         node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
-<<<<<<< HEAD
     '''Initialize rest of nodes with 10 balls, with between 0 and 5 red balls'''
-=======
-    '''Initialize rest of nodes with between 0 and 5 red balls'''
->>>>>>> sabrina
     for node in nodes[num_unhealthy:]:
         tmp = random.randint(0, 5)  # 0 to 5 inclusive
         node[0] = tmp
