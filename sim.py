@@ -24,6 +24,8 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
+# ============ Simulation Parameters and Global Variables ============
+
 NUM_NODES = 150
 PROPORTION_S_THOUGHTS = 0.16
 S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
@@ -31,14 +33,63 @@ S_THRESHOLD = 0.9
 
 CLIQUE_SIZE = 5
 
-# Values of each node.  [R,B]
+# Values of each node's urn.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
+metrics = []
+
+# ================ Checks / Helper / Metric Functions ================
 
 def check_setup(G):
     '''Check that the variables make sense with each other.  Graph G'''
     assert(NUM_NODES == len(nodes))
     assert(NUM_NODES == len(G))
 
+
+def show_network(G, pos, prop):
+    # Fix the colorbar
+    norm = mpl.colors.Normalize(vmin=0, vmax=100)
+    # Draw
+    nx.draw_networkx_edges(G, pos)
+    nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop, cmap=plt.cm.Reds, edgecolors='black')
+    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
+    cbar.set_label("Proportion of Red")
+
+def iterative_mean(arr):
+    '''We're starting to get overflow errors.
+    This calculates the mean iteratively so that the sum doesn't get too large.
+    '''
+    avg = 0
+    t = 1
+    for x in arr:
+        avg += (x - avg) / t
+        t += 1
+    return avg
+
+def calculte_metrics(G):
+    global nodes
+    metrics = {}
+
+    metrics["network susceptibility"] = iterative_mean(
+        [node[0]/(node[0]+node[1]) for node in nodes]
+    )
+
+    # Calculate super-nodes for network exposure
+    super_nodes = []
+    for i in range(NUM_NODES):
+        neighbors = list(G[i])
+        neighbors.append(i)
+        super_node = [0,0]
+        for neighbor in neighbors:
+            super_node[0] += nodes[neighbor][0]
+            super_node[1] += nodes[neighbor][1]
+        super_nodes.append(super_node)
+    metrics["network exposure"] = iterative_mean(
+        [super_node[0]/(super_node[0]+super_node[1]) for super_node in super_nodes]
+    )
+
+    return metrics
+
+# ========================= Graph generators =========================
 
 def connected_graph():
     '''V1 of making a connected graph'''
@@ -49,11 +100,11 @@ def connected_graph():
         [1,1,0,1,1],
         [1,1,1,0,1],
         [1,1,1,1,0],
-
     ])
     return nx.from_numpy_array(adj)
 
-def fill_houses():
+
+def houses_graph():
     ROWS = 13
     COLS = 30
     # Houses by number of bedrooms
@@ -139,17 +190,16 @@ def fill_houses():
     return nx.convert_node_labels_to_integers(G)
 
 
-# add up _____
-#compute connectivity i.e. average degree (density of graph)
-
-'''Not using this for now'''
 def ba_graph():
     return nx.extended_barabasi_albert_graph(NUM_NODES, 2, 0, 0)
+
 
 def clique_graph():
     '''Relaxed caveman graph returns a graph with `l` cliques of size `k`. Edges are
     then randomly rewired with probability `p` to link different cliques'''
     return nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
+
+# ========================= Node Initializers =========================
 
 def define_risk_levels():
     proportionRiskLevel = {}
@@ -160,6 +210,7 @@ def define_risk_levels():
     at_risk = sum(proportionRiskLevel.values())
     proportionRiskLevel[0] = 1 - at_risk
     return proportionRiskLevel
+
 
 def init_nodes():
     riskLevels = define_risk_levels()
@@ -172,6 +223,7 @@ def init_nodes():
         tmp = random.randint(0, 5)  # 0 to 5 inclusive
         node[0] = tmp
         node[1] = 10 - tmp
+
 
 def init_nodes_profiles():
     '''Initialize the nodes according to the following profiles.  Total 10 balls'''
@@ -194,6 +246,8 @@ def init_nodes_profiles():
     # Now shuffle the nodes array
     np.random.shuffle(nodes)
 
+# ========================= Delta Function =========================
+
 def set_delta(neighbors):
     '''Set delta for each time.  Neighbors here should include the given node'''
     global nodes
@@ -202,6 +256,7 @@ def set_delta(neighbors):
         sum_R += nodes[node][0]
     return int(sum_R/len(neighbors))
 
+# ==================== Update Function and Helpers ====================
 
 def calculate_proportions(print_out=False):
     global nodes
@@ -212,16 +267,6 @@ def calculate_proportions(print_out=False):
         if (print_out):
             print(f"{tmp:2.0f}%")
     return prop
-
-
-def show_network(G, pos, prop):
-    # Fix the colorbar
-    norm = mpl.colors.Normalize(vmin=0, vmax=100)
-    # Draw
-    nx.draw_networkx_edges(G, pos)
-    nx.draw_networkx_nodes(G, pos, node_size = 50, vmin=0, vmax=100, node_color = prop, cmap=plt.cm.Reds, edgecolors='black')
-    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=plt.cm.Reds))
-    cbar.set_label("Proportion of Red")
 
 
 def updateFunc(step, G, pos):
@@ -245,6 +290,8 @@ def updateFunc(step, G, pos):
         new_nodes[i][ball] += delta
     # I'm not sure this needs to be a copy, better safe than sorry
     nodes = new_nodes.copy()
+    # Calculate metrics
+    metrics.append(calculte_metrics(G))
     # Print
     print(nodes)
     prop_current = calculate_proportions()
@@ -252,45 +299,41 @@ def updateFunc(step, G, pos):
     plt.title(f"Step {step+1}")
     #plt.show()
 
+# ============================== Main Loop ==============================
 
 def main():
-    global nodes
     '''Main setup and loop'''
+    global nodes
     # Setup
     G = ba_graph()
     #G = clique_graph()
     pos = nx.spring_layout(G)
     init_nodes_profiles()
 
-    print("Average node connectivity: ", nx.average_node_connectivity(G))
-
     # Check
     check_setup(G)
 
-    # Show values
-    print(nodes)
-
-    print()
-
-    print("Proportion of Red Before")
-    prop_before = calculate_proportions(print_out=True)
-
-    # Show network
-    print()
+    # Show network Information
     print(nx.info(G))
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
+    print("Average node connectivity: ", nx.average_node_connectivity(G))
 
-    # Current Status
+    print()
+
+    # Calculate initial proportions
+    # Don't print this time
+    prop_before = calculate_proportions()
+
+    # Show Network Before
     show_network(G, pos, prop_before)
     plt.title("Before")
     plt.show()
 
     # Loop
     fig = plt.figure()
-    animator = ani.FuncAnimation(fig, updateFunc, fargs=(G,pos), interval=1000, frames=10, repeat=False)
+    animator = ani.FuncAnimation(fig, updateFunc, fargs=(G,pos), interval=100, frames=20, repeat=False)
     plt.show()
-
 
     # Print Result
     print()
@@ -303,9 +346,18 @@ def main():
     print("Proportion of Red After")
     prop_after = calculate_proportions(print_out=True)
 
-    # Show network
+    # Show Network After
     show_network(G, pos, prop_after)
     plt.title("After")
+    plt.show()
+
+    # Show metrics
+    plt.plot([metrics_dict["network susceptibility"] for metrics_dict in metrics])
+    plt.title("Network Susceptibility")
+    plt.show()
+
+    plt.plot([metrics_dict["network exposure"] for metrics_dict in metrics])
+    plt.title("Network Exposure")
     plt.show()
 
 if __name__ == "__main__":
