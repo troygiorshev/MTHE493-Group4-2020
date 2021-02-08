@@ -177,6 +177,27 @@ def init_nodes():
         node[0] = tmp
         node[1] = 10 - tmp
 
+def init_nodes_profiles():
+    '''Initialize the nodes according to the following profiles.  Total 10 balls'''
+    global nodes
+    percentages = [20, 65, 15]
+    proportions = [20, 45, 65]
+
+    # Sanity Check
+    assert(sum(percentages) == 100)
+
+    numbers = [int(NUM_NODES*percentage/100) for percentage in percentages]
+
+    print(numbers)
+
+    part = 0
+    for i, number in enumerate(numbers):
+        for node in nodes[part : part + number]:
+            node[0] = int(proportions[i] / 10)   # (x / 100) * 10 = x / 10
+            node[1] = 10 - node[0]
+        part += number
+    
+    random.shuffle(nodes)
 
 def set_delta(neighbors):
     '''Set delta for each time.  Neighbors here should include the given node'''
@@ -244,7 +265,7 @@ def main():
     #G = ba_graph()
     G = clique_graph()
     pos = nx.spring_layout(G)
-    init_nodes()
+    init_nodes_profiles()
 
     # Check
     check_setup(G)
