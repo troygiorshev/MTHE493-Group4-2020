@@ -24,11 +24,15 @@ import seaborn as sns
 
 #random.seed(1234)   # Set random seed for reproducability
 
+<<<<<<< HEAD
 
 NUM_NODES = 150
 
+=======
+NUM_NODES = 150
+>>>>>>> sabrina
 PROPORTION_S_THOUGHTS = 0.16
-S_THOUGHTS_THRESHOLD = 0.7
+S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
 S_THRESHOLD = 0.9
 
 CLIQUE_SIZE = 5
@@ -51,6 +55,7 @@ def connected_graph():
         [1,1,0,1,1],
         [1,1,1,0,1],
         [1,1,1,1,0],
+
     ])
     return nx.from_numpy_array(adj)
 
@@ -160,7 +165,11 @@ def init_nodes():
     for node in nodes[0:num_unhealthy - 1]:
         node[0] = int(10 * S_THOUGHTS_THRESHOLD)
         node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
+<<<<<<< HEAD
     '''Initialize rest of nodes with 10 balls, with between 0 and 5 red balls'''
+=======
+    '''Initialize rest of nodes with between 0 and 5 red balls'''
+>>>>>>> sabrina
     for node in nodes[num_unhealthy:]:
         tmp = random.randint(0, 5)  # 0 to 5 inclusive
         node[0] = tmp
@@ -235,6 +244,8 @@ def main():
     pos = nx.spring_layout(G)
     init_nodes()
 
+    print("Average node connectivity: ", nx.average_node_connectivity(G))
+
     # Check
     check_setup(G)
 
@@ -273,8 +284,6 @@ def main():
 
     print("Proportion of Red After")
     prop_after = calculate_proportions(print_out=True)
-
-    print("Got here")
 
     # Show network
     show_network(G, pos, prop_after)
