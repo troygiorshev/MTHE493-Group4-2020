@@ -14,11 +14,6 @@ from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
 
-#imports for caveman graph
-import itertools
-import math
-from networkx.utils import py_random_state
-
 from colorsys import hls_to_rgb
 
 # Other imports maybe we'll use one day
@@ -31,10 +26,10 @@ import seaborn as sns
 
 NUM_NODES = 150
 PROPORTION_S_THOUGHTS = 0.16
-S_THOUGHTS_THRESHOLD = 0.7
+S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
 S_THRESHOLD = 0.9
 
-NUM_NEIGHBOURHOODS = 10
+CLIQUE_SIZE = 5
 
 # Values of each node.  [R,B]
 nodes = np.array([[0,0]]*NUM_NODES)
@@ -66,7 +61,7 @@ def ba_graph():
 def clique_graph():
     '''Relaxed caveman graph returns a graph with `l` cliques of size `k`. Edges are
     then randomly rewired with probability `p` to link different cliques'''
-    return nx.relaxed_caveman_graph(NUM_NEIGHBOURHOODS, int(NUM_NODES/NUM_NEIGHBOURHOODS), 0.5, seed=None)
+    return nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
 
 def adjust_for_real_stats():
     return NUM_NODES*PROPORTION_S_THOUGHTS
