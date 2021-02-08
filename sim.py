@@ -184,8 +184,6 @@ def init_nodes_profiles():
 
     numbers = [int(NUM_NODES*percentage/100) for percentage in percentages]
 
-    print(numbers)
-
     part = 0
     for i, number in enumerate(numbers):
         for node in nodes[part : part + number]:
@@ -193,7 +191,8 @@ def init_nodes_profiles():
             node[1] = 10 - node[0]
         part += number
     
-    random.shuffle(nodes)
+    # Now shuffle the nodes array
+    np.random.shuffle(nodes)
 
 def set_delta(neighbors):
     '''Set delta for each time.  Neighbors here should include the given node'''
@@ -258,8 +257,8 @@ def main():
     global nodes
     '''Main setup and loop'''
     # Setup
-    #G = ba_graph()
-    G = clique_graph()
+    G = ba_graph()
+    #G = clique_graph()
     pos = nx.spring_layout(G)
     init_nodes_profiles()
 
