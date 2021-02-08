@@ -234,6 +234,8 @@ def main():
     pos = nx.spring_layout(G)
     init_nodes()
 
+    print("Average node connectivity: ", nx.average_node_connectivity(G))
+
     # Check
     check_setup(G)
 
