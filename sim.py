@@ -151,19 +151,23 @@ def clique_graph():
     then randomly rewired with probability `p` to link different cliques'''
     return nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
 
+def profiles():
+    risk_factors = {}
+
+
 def define_risk_levels():
     proportionRiskLevel = {}
-    proportionRiskLevel[1] = 0.2
-    proportionRiskLevel[2] = 0.2
-    proportionRiskLevel[3] = NUM_NODES*PROPORTION_S_THOUGHTS
-    proportionRiskLevel[4] = 0.2
+    proportionRiskLevel["med-low"] = 0.1
+    proportionRiskLevel["med"] = 0.45
+    proportionRiskLevel["med-high"] = 0 #NUM_NODES*PROPORTION_S_THOUGHTS
+    proportionRiskLevel["high"] = 0.15
     at_risk = sum(proportionRiskLevel.values())
-    proportionRiskLevel[0] = 1 - at_risk
+    proportionRiskLevel["low"] = 1 - at_risk
     return proportionRiskLevel
 
 def init_nodes():
     riskLevels = define_risk_levels()
-    num_unhealthy = int(riskLevels[4]*NUM_NODES)
+    num_unhealthy = int(riskLevels["med-high"]*NUM_NODES)
     for node in nodes[0:num_unhealthy - 1]:
         node[0] = int(10 * S_THOUGHTS_THRESHOLD)
         node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
@@ -242,8 +246,6 @@ def main():
     pos = nx.spring_layout(G)
     init_nodes()
 
-    print("Average node connectivity: ", nx.average_node_connectivity(G))
-
     # Check
     check_setup(G)
 
@@ -260,6 +262,7 @@ def main():
     print(nx.info(G))
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
+    print("Average node connectivity: ", nx.average_node_connectivity(G))
 
     # Current Status
     show_network(G, pos, prop_before)
