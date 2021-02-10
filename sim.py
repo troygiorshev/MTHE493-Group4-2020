@@ -215,14 +215,33 @@ def define_risk_levels():
 
 
 def init_nodes():
-    riskLevels = define_risk_levels()
-    num_unhealthy = int(riskLevels["med-high"]*NUM_NODES)
-    for node in nodes[0:num_unhealthy - 1]:
-        node[0] = int(10 * S_THOUGHTS_THRESHOLD)
-        node[1] = int(10 - 10 * S_THOUGHTS_THRESHOLD)
-    '''Initialize rest of nodes with 10 balls, with between 0 and 5 red balls'''
-    for node in nodes[num_unhealthy:]:
-        tmp = random.randint(0, 5)  # 0 to 5 inclusive
+    global nodes
+    proportion_risk_levels = define_risk_levels()
+    num_each_risk_level = {}
+    for level in proportion_risk_levels: num_each_risk_level[level] = int(proportion_risk_levels[level]*NUM_NODES)
+    risk_range = num_each_risk_level["low"]
+    for node in nodes[0:risk_range-1]:
+        tmp = random.randint(1, 2)
+        node[0] = tmp
+        node[1] = 10 - tmp
+    risk_range += num_each_risk_level["med-low"]
+    for node in nodes[risk_range - num_each_risk_level["med-low"]:risk_range-1]:
+        tmp = random.randint(3, 4)
+        node[0] = tmp
+        node[1] = 10 - tmp
+    risk_range += num_each_risk_level["med"]
+    for node in nodes[risk_range - num_each_risk_level["med"]:risk_range - 1]:
+        tmp = random.randint(5, 6)
+        node[0] = tmp
+        node[1] = 10 - tmp
+    risk_range += num_each_risk_level["med-high"]
+    for node in nodes[risk_range - num_each_risk_level["med-high"]:risk_range - 1]:
+        tmp = random.randint(7, 8)
+        node[0] = tmp
+        node[1] = 10 - tmp
+    risk_range += num_each_risk_level["high"]
+    for node in nodes[risk_range - num_each_risk_level["high"]:risk_range - 1]:
+        tmp = random.randint(8, 9)
         node[0] = tmp
         node[1] = 10 - tmp
 
@@ -264,10 +283,10 @@ def calculate_proportions(print_out=False):
     global nodes
     prop = []
     for node in nodes:
-        tmp = 100*node[0]/(node[0] + node[1])
-        prop.append(tmp)
+        temp = 100*node[0]/(node[0] + node[1])
+        prop.append(temp)
         if (print_out):
-            print(f"{tmp:2.0f}%")
+            print(f"{temp:2.0f}%")
     return prop
 
 
@@ -310,8 +329,8 @@ def main():
     G = ba_graph()
     #G = clique_graph()
     pos = nx.spring_layout(G)
-    init_nodes_profiles()
-
+    #init_nodes_profiles()
+    init_nodes()
     # Check
     check_setup(G)
 
