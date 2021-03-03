@@ -333,7 +333,6 @@ def calculate_proportions(print_out=False):
 
 def updateFunc(step, G, pos):
     global nodes
-    global suicides
     print()
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
@@ -370,7 +369,6 @@ def updateFunc(step, G, pos):
 def main():
     '''Main setup and loop'''
     global nodes
-    global suicides
     # Setup
     G = ba_graph()
     #G = clique_graph()
@@ -385,7 +383,8 @@ def main():
     print(nx.info(G))
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
-    #print("Average node connectivity: ", nx.average_node_connectivity(G))
+    # WARNING - This next one is very slow for large graphs
+    print("Average node connectivity: ", nx.average_node_connectivity(G))
 
     print()
 
