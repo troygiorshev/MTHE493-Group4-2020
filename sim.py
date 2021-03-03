@@ -26,6 +26,7 @@ import seaborn as sns
 
 # ============ Simulation Parameters and Global Variables ============
 
+NUM_TIME_STEPS = 40
 NUM_NODES = 150
 PROPORTION_S_THOUGHTS = 0.16
 S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
@@ -35,6 +36,7 @@ CLIQUE_SIZE = 5
 
 # Values of each node's urn.  [R,B]
 nodes = np.zeros((NUM_NODES,2), dtype=int)
+
 metrics = []
 
 # ================ Checks / Helper / Metric Functions ================
@@ -69,13 +71,14 @@ def calculte_metrics(G):
     global nodes
     metrics = {}
 
+    ## Network Susceptibility
     metrics["network susceptibility"] = iterative_mean(
         [node[0]/(node[0]+node[1]) for node in nodes]
     )
 
-    # Calculate super-nodes for network exposure
+    # Calculate super nodes, we'll use these next
     super_nodes = []
-    for i in range(NUM_NODES):
+    for i in range(len(nodes)):
         neighbors = list(G[i])
         neighbors.append(i)
         super_node = [0,0]
@@ -83,8 +86,15 @@ def calculte_metrics(G):
             super_node[0] += nodes[neighbor][0]
             super_node[1] += nodes[neighbor][1]
         super_nodes.append(super_node)
+
+    ## Network Exposure
     metrics["network exposure"] = iterative_mean(
         [super_node[0]/(super_node[0]+super_node[1]) for super_node in super_nodes]
+    )
+
+    ## Suicidal Thoughts
+    metrics["suicial thoughts"] = len(
+        [node for node in nodes if node[0]/(node[0]+node[1]) >= S_THOUGHTS_THRESHOLD]
     )
 
     return metrics
@@ -105,6 +115,7 @@ def connected_graph():
 
 
 def houses_graph():
+    assert(NUM_NODES == 1500)
     ROWS = 13
     COLS = 30
     # Houses by number of bedrooms
@@ -203,6 +214,7 @@ def profiles():
     risk_factors = {}
 
 # ========================= Node Initializers =========================
+
 def define_risk_levels():
     proportionRiskLevel = {}
     proportionRiskLevel["med-low"] = 0.25
@@ -277,6 +289,35 @@ def set_delta(neighbors):
         sum_R += nodes[node][0]
     return int(sum_R/len(neighbors))
 
+
+def remove_suicides(G):
+    '''Remove nodes who surpass the suicide threshold
+    
+    Returns the number of suicides
+    '''
+    global nodes
+    old_size = len(nodes)
+    to_delete = [] # List of row indices to delete
+    for i, node in enumerate(nodes):
+        if node[0]/(node[0] + node[1]) >= S_THRESHOLD:
+            # Set node for removal from nodes array
+            to_delete.append(i)
+            # For now, connect all of the node's neighbors to each other
+            # So that the graph never becomes disconnected
+            neighbors = list(G[i])
+            for j, node_1 in enumerate(neighbors[:-1]):
+                for node_2 in neighbors[j+1:]:
+                    G.add_edge(node_1, node_2)
+            G.remove_node(i)
+    nodes = np.delete(nodes, to_delete, axis=0)
+    # Relabel the nodes so the graph's labels match up again with the nodes array indices
+    old_names = [x for x in range(old_size) if x not in to_delete]
+    new_names = range(len(nodes))
+    mapping = {old: new for old, new in zip(old_names, new_names)}
+    nx.relabel_nodes(G, mapping, copy=False)
+    return len(to_delete)
+
+
 # ==================== Update Function and Helpers ====================
 
 def calculate_proportions(print_out=False):
@@ -295,7 +336,7 @@ def updateFunc(step, G, pos):
     print()
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
-    for i in range(NUM_NODES):
+    for i in range(len(nodes)):
         # Make the super node
         # Remember "neighbors" for us includes the node
         neighbors = list(G[i])
@@ -310,8 +351,12 @@ def updateFunc(step, G, pos):
         delta = set_delta(neighbors)
         new_nodes[i][ball] += delta
     nodes = new_nodes
+    # Remove suicides
+    num_suicides = remove_suicides(G)
     # Calculate metrics
     metrics.append(calculte_metrics(G))
+    # Record Suicides
+    metrics[-1]["suicides"] = num_suicides
     # Print
     print(nodes)
     prop_current = calculate_proportions()
@@ -327,6 +372,7 @@ def main():
     # Setup
     G = ba_graph()
     #G = clique_graph()
+    #G = houses_graph()
     pos = nx.spring_layout(G)
     #init_nodes_profiles()
     init_nodes()
@@ -337,6 +383,7 @@ def main():
     print(nx.info(G))
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
+    # WARNING - This next one is very slow for large graphs
     print("Average node connectivity: ", nx.average_node_connectivity(G))
 
     print()
@@ -352,7 +399,7 @@ def main():
 
     # Loop
     fig = plt.figure()
-    animator = ani.FuncAnimation(fig, updateFunc, fargs=(G,pos), interval=100, frames=20, repeat=False)
+    animator = ani.FuncAnimation(fig, updateFunc, fargs=(G,pos), interval=100, frames=NUM_TIME_STEPS, repeat=False)
     plt.show()
 
     # Print Result
@@ -378,6 +425,16 @@ def main():
 
     plt.plot([metrics_dict["network exposure"] for metrics_dict in metrics])
     plt.title("Network Exposure")
+    plt.show()
+
+    plt.plot([metrics_dict["suicides"] for metrics_dict in metrics])
+    plt.title("Suicides by time step")
+    plt.show()
+    total_suicides = sum([metrics_dict["suicides"] for metrics_dict in metrics])
+    print(f"Average suicide rate: {total_suicides/NUM_TIME_STEPS} per step")
+
+    plt.plot([metrics_dict["suicial thoughts"] for metrics_dict in metrics])
+    plt.title("Number of People with Suicidal Thoughts by time step")
     plt.show()
 
 if __name__ == "__main__":
