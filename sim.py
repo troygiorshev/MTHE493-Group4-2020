@@ -34,7 +34,7 @@ S_THRESHOLD = 0.9
 CLIQUE_SIZE = 5
 
 # Values of each node's urn.  [R,B]
-nodes = np.array([[0,0]]*NUM_NODES)
+nodes = np.zeros((NUM_NODES,2), dtype=int)
 metrics = []
 
 # ================ Checks / Helper / Metric Functions ================
@@ -309,8 +309,7 @@ def updateFunc(step, G, pos):
         ball = 0 if rng < super_node[0] / (super_node[0] + super_node[1]) else 1
         delta = set_delta(neighbors)
         new_nodes[i][ball] += delta
-    # I'm not sure this needs to be a copy, better safe than sorry
-    nodes = new_nodes.copy()
+    nodes = new_nodes
     # Calculate metrics
     metrics.append(calculte_metrics(G))
     # Print
