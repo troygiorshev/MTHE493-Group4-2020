@@ -75,7 +75,7 @@ def calculte_metrics(G):
 
     # Calculate super-nodes for network exposure
     super_nodes = []
-    for i in range(NUM_NODES):
+    for i in range(len(nodes)):
         neighbors = list(G[i])
         neighbors.append(i)
         super_node = [0,0]
@@ -203,6 +203,7 @@ def profiles():
     risk_factors = {}
 
 # ========================= Node Initializers =========================
+
 def define_risk_levels():
     proportionRiskLevel = {}
     proportionRiskLevel["med-low"] = 0.1
@@ -277,6 +278,31 @@ def set_delta(neighbors):
         sum_R += nodes[node][0]
     return int(sum_R/len(neighbors))
 
+
+def remove_suicides(G):
+    '''Remove nodes who surpass the suicide threshold'''
+    global nodes
+    old_size = len(nodes)
+    to_delete = [] # List of row indices to delete
+    for i, node in enumerate(nodes):
+        if node[0]/(node[0] + node[1]) >= S_THRESHOLD:
+            # Set node for removal from nodes array
+            to_delete.append(i)
+            # For now, connect all of the node's neighbors to each other
+            # So that the graph never becomes disconnected
+            neighbors = list(G[i])
+            for j, node_1 in enumerate(neighbors[:-1]):
+                for node_2 in neighbors[j+1:]:
+                    G.add_edge(node_1, node_2)
+            G.remove_node(i)
+    nodes = np.delete(nodes, to_delete, axis=0)
+    # Relabel the nodes so the graph's labels match up again with the nodes array indices
+    old_names = [x for x in range(old_size) if x not in to_delete]
+    new_names = range(len(nodes))
+    mapping = {old: new for old, new in zip(old_names, new_names)}
+    nx.relabel_nodes(G, mapping, copy=False)
+
+
 # ==================== Update Function and Helpers ====================
 
 def calculate_proportions(print_out=False):
@@ -295,7 +321,7 @@ def updateFunc(step, G, pos):
     print()
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
-    for i in range(NUM_NODES):
+    for i in range(len(nodes)):
         # Make the super node
         # Remember "neighbors" for us includes the node
         neighbors = list(G[i])
@@ -310,6 +336,8 @@ def updateFunc(step, G, pos):
         delta = set_delta(neighbors)
         new_nodes[i][ball] += delta
     nodes = new_nodes
+    # Remove suicides
+    remove_suicides(G)
     # Calculate metrics
     metrics.append(calculte_metrics(G))
     # Print
