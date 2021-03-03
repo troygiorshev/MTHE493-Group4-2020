@@ -205,12 +205,12 @@ def profiles():
 # ========================= Node Initializers =========================
 def define_risk_levels():
     proportionRiskLevel = {}
-    proportionRiskLevel["med-low"] = 0.1
-    proportionRiskLevel["med"] = 0.45
-    proportionRiskLevel["med-high"] = 0 #NUM_NODES*PROPORTION_S_THOUGHTS
-    proportionRiskLevel["high"] = 0.15
-    at_risk = sum(proportionRiskLevel.values())
-    proportionRiskLevel["low"] = 1 - at_risk
+    proportionRiskLevel["med-low"] = 0.25
+    proportionRiskLevel["med"] = 0.35
+    proportionRiskLevel["med-high"] = 0.15 #NUM_NODES*PROPORTION_S_THOUGHTS
+    proportionRiskLevel["high"] = 0.10
+    #at_risk = sum(proportionRiskLevel.values)
+    proportionRiskLevel["low"] = 0.15
     return proportionRiskLevel
 
 
