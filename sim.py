@@ -305,11 +305,25 @@ def remove_suicides(G):
             if completed > 0.5:
                 to_delete.append(i)
                 # For now, connect all of the node's neighbors to each other
-                # So that the graph never becomes disconnected
+                # With a 10% chance of connection
                 neighbors = list(G[i])
                 for j, node_1 in enumerate(neighbors[:-1]):
                     for node_2 in neighbors[j+1:]:
-                        G.add_edge(node_1, node_2)
+                        if random.random() < 0.1:
+                            G.add_edge(node_1, node_2)
+                if not nx.is_connected(G):
+                    # We've made the graph disconnected.
+                    # For now, fix this by adding connections between neighbors
+                    # until it is connected
+                    done = False
+                    for j, node_1 in enumerate(neighbors[:-1]):
+                        if done:
+                            break
+                        for node_2 in neighbors[j+1:]:
+                            G.add_edge(node_1, node_2)
+                            done = nx.is_connected(G)
+                            if done:
+                                break
                 G.remove_node(i)
             else:
                 # Suidice attempt occurred, but did not result in death
