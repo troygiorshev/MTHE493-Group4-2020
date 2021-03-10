@@ -363,6 +363,30 @@ def random_mitigation_percentage(budget_percentage):
         budget += (node[0] + node[1]) * budget_percentage
     random_mitigation(budget)
 
+def centrality_mitigation(G, budget, fraction):
+    '''Distributes black balls to the top {fraction}% most central nodes
+    This uses degree centrality right now.
+    Budget is an absolute number of balls.'''
+    global nodes
+    centralities = np.zeros(len(nodes), dtype=float)
+    for i, val in nx.degree_centrality(G).items():
+        centralities[i] = val
+    num = int(len(nodes) * fraction)
+    highest = np.argpartition(centralities, -num)[-num:]
+    step = budget // num
+    for i in highest:
+        nodes[i][1] += step
+
+def centrality_mitigation_percentage(G, budget_percentage, fraction):
+    '''Distributes black balls to the top {fraction}% most central nodes
+    Budget is a percentage of the total number of balls in the system'''
+    # We can't just sum all of the nodes and then multiply by the percentage,
+    # the number gets too large.
+    budget = 0
+    for _, node in enumerate(nodes):
+        budget += (node[0] + node[1]) * budget_percentage
+    centrality_mitigation(G, budget, fraction)
+
 # ==================== Update Function and Helpers ====================
 
 def calculate_proportions(print_out=False):
@@ -380,7 +404,7 @@ def updateFunc(step, G, pos):
     global nodes
     print()
     ## Apply mitigations
-    random_mitigation_percentage(0.01)
+    #centrality_mitigation_percentage(G, 0.01, 0.1)
     ## Run main simulation step
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
