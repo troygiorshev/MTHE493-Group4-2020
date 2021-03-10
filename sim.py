@@ -26,7 +26,7 @@ import seaborn as sns
 
 # ============ Simulation Parameters and Global Variables ============
 
-NUM_TIME_STEPS = 40
+NUM_TIME_STEPS = 52
 NUM_NODES = 150
 PROPORTION_S_THOUGHTS = 0.16
 S_THOUGHTS_THRESHOLD = 0.7 #change to based on sadness scale
@@ -311,6 +311,9 @@ def remove_suicides(G):
                     for node_2 in neighbors[j+1:]:
                         G.add_edge(node_1, node_2)
                 G.remove_node(i)
+            else:
+                # Suidice attempt occurred, but did not result in death
+                nodes[i][0] = nodes[i][0] * 0.9 # Remove some red balls
     nodes = np.delete(nodes, to_delete, axis=0)
     # Relabel the nodes so the graph's labels match up again with the nodes array indices
     old_names = [x for x in range(old_size) if x not in to_delete]
@@ -319,6 +322,32 @@ def remove_suicides(G):
     nx.relabel_nodes(G, mapping, copy=False)
     return len(to_delete)
 
+
+# ========================= Mitigation Methods =========================
+
+def random_mitigation(budget):
+    '''Add black balls randomly to nodes.
+    Budget is an absolute number of balls.'''
+    global nodes
+    # Eventually this number gets very large.  We need to bound the number of steps.
+    step = 1
+    if budget > len(nodes) * 10:
+        step = budget // (len(nodes) * 5)
+    while budget > 0:
+        i = random.randrange(len(nodes))
+        nodes[i][1] += step
+        budget -= step
+
+def random_mitigation_percentage(budget_percentage):
+    '''Add black balls randomly to nodes.
+    Budget is a percentage of the total number of balls in the system'''
+    global nodes
+    # We can't just sum all of the nodes and then multiply by the percentage,
+    # the number gets too large.
+    budget = 0
+    for _, node in enumerate(nodes):
+        budget += (node[0] + node[1]) * budget_percentage
+    random_mitigation(budget)
 
 # ==================== Update Function and Helpers ====================
 
@@ -336,6 +365,9 @@ def calculate_proportions(print_out=False):
 def updateFunc(step, G, pos):
     global nodes
     print()
+    ## Apply mitigations
+    random_mitigation_percentage(0.01)
+    ## Run main simulation step
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
     for i in range(len(nodes)):
@@ -353,13 +385,13 @@ def updateFunc(step, G, pos):
         delta = set_delta(neighbors)
         new_nodes[i][ball] += delta
     nodes = new_nodes
-    # Remove suicides
+    ## Remove suicides
     num_suicides = remove_suicides(G)
-    # Calculate metrics
+    ## Calculate metrics
     metrics.append(calculte_metrics(G))
-    # Record Suicides
+    ## Record Suicides
     metrics[-1]["suicides"] = num_suicides
-    # Print
+    ## Print
     print(nodes)
     prop_current = calculate_proportions()
     show_network(G, pos, prop_current)
@@ -433,7 +465,7 @@ def main():
     plt.title("Suicides by time step")
     plt.show()
     total_suicides = sum([metrics_dict["suicides"] for metrics_dict in metrics])
-    print(f"Average suicide rate: {total_suicides/NUM_TIME_STEPS} per step")
+    print(f"Average suicide rate: {total_suicides/NUM_TIME_STEPS:.2f} per step")
 
     plt.plot([metrics_dict["suicial thoughts"] for metrics_dict in metrics])
     plt.title("Number of People with Suicidal Thoughts by time step")
