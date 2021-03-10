@@ -301,14 +301,16 @@ def remove_suicides(G):
     for i, node in enumerate(nodes):
         if node[0]/(node[0] + node[1]) >= S_THRESHOLD:
             # Set node for removal from nodes array
-            to_delete.append(i)
-            # For now, connect all of the node's neighbors to each other
-            # So that the graph never becomes disconnected
-            neighbors = list(G[i])
-            for j, node_1 in enumerate(neighbors[:-1]):
-                for node_2 in neighbors[j+1:]:
-                    G.add_edge(node_1, node_2)
-            G.remove_node(i)
+            completed = random.uniform(0,1)
+            if completed > 0.5:
+                to_delete.append(i)
+                # For now, connect all of the node's neighbors to each other
+                # So that the graph never becomes disconnected
+                neighbors = list(G[i])
+                for j, node_1 in enumerate(neighbors[:-1]):
+                    for node_2 in neighbors[j+1:]:
+                        G.add_edge(node_1, node_2)
+                G.remove_node(i)
     nodes = np.delete(nodes, to_delete, axis=0)
     # Relabel the nodes so the graph's labels match up again with the nodes array indices
     old_names = [x for x in range(old_size) if x not in to_delete]
