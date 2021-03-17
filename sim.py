@@ -217,12 +217,12 @@ def profiles():
 
 def define_risk_levels():
     proportionRiskLevel = {}
+    proportionRiskLevel["low"] = 0.15
     proportionRiskLevel["med-low"] = 0.25
     proportionRiskLevel["med"] = 0.35
     proportionRiskLevel["med-high"] = 0.15 #NUM_NODES*PROPORTION_S_THOUGHTS
     proportionRiskLevel["high"] = 0.10
     #at_risk = sum(proportionRiskLevel.values)
-    proportionRiskLevel["low"] = 0.15
     return proportionRiskLevel
 
 
@@ -327,7 +327,9 @@ def remove_suicides(G):
                 G.remove_node(i)
             else:
                 # Suidice attempt occurred, but did not result in death
-                nodes[i][0] = nodes[i][0] * 0.9 # Remove some red balls
+                tmp = nodes[i][0]
+                nodes[i][0] = tmp * 0.9 # Remove some red balls
+                nodes[i][1] += tmp * 0.1 # Add them to black to keep total constant
     nodes = np.delete(nodes, to_delete, axis=0)
     # Relabel the nodes so the graph's labels match up again with the nodes array indices
     old_names = [x for x in range(old_size) if x not in to_delete]
