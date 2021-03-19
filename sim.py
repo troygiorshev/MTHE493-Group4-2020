@@ -22,7 +22,7 @@ import multiprocessing as mp
 import pandas as pd
 import seaborn as sns 
 
-#random.seed(1234)   # Set random seed for reproducability
+random.seed(1234)   # Set random seed for reproducability
 
 # ============ Simulation Parameters and Global Variables ============
 
@@ -371,7 +371,7 @@ def centrality_mitigation(G, budget, fraction):
     Budget is an absolute number of balls.'''
     global nodes
     centralities = np.zeros(len(nodes), dtype=float)
-    for i, val in nx.degree_centrality(G).items():
+    for i, val in nx.closeness_centrality(G).items():
         centralities[i] = val
     num = int(len(nodes) * fraction)
     highest = np.argpartition(centralities, -num)[-num:]
@@ -406,7 +406,8 @@ def updateFunc(step, G, pos):
     global nodes
     print()
     ## Apply mitigations
-    #centrality_mitigation_percentage(G, 0.01, 0.1)
+    #random_mitigation_percentage(0.01)
+    centrality_mitigation_percentage(G, 0.01, 0.1)
     ## Run main simulation step
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
@@ -444,8 +445,8 @@ def main():
     '''Main setup and loop'''
     global nodes
     # Setup
-    G = ba_graph()
-    #G = clique_graph()
+    #G = ba_graph()
+    G = clique_graph()
     #G = houses_graph()
     pos = nx.spring_layout(G)
     #init_nodes_profiles()
@@ -458,7 +459,7 @@ def main():
     print(f"Density: {nx.density(G)}")
     print(f"Diameter: {nx.diameter(G)}")
     # WARNING - This next one is very slow for large graphs
-    print("Average node connectivity: ", nx.average_node_connectivity(G))
+    #print("Average node connectivity: ", nx.average_node_connectivity(G))
 
     print()
 
