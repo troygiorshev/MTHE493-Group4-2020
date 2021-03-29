@@ -22,7 +22,7 @@ import multiprocessing as mp
 import pandas as pd
 import seaborn as sns 
 
-random.seed(1234)   # Set random seed for reproducability
+#random.seed(1234)   # Set random seed for reproducability
 
 # ============ Simulation Parameters and Global Variables ============
 
@@ -34,9 +34,12 @@ S_THRESHOLD = 0.9
 
 CLIQUE_SIZE = 5
 
+MITIGATION_DELAY = 0
+
 # Values of each node's urn.  [R,B]
 nodes = np.zeros((NUM_NODES,2), dtype=int)
 
+# List of metric dictionaries
 metrics = []
 
 # ================ Checks / Helper / Metric Functions ================
@@ -341,6 +344,31 @@ def remove_suicides(G):
 
 # ========================= Mitigation Methods =========================
 
+def uniform_mitigation(budget):
+    '''Add black balls uniformly to nodes.
+    Budget is an absolute number of balls.'''
+    global nodes
+    # Budget is always many orders of magnitude larger than len(nodes),
+    # So we'll never be that far off doing it this way
+    part = budget // len(nodes)
+    for node in nodes:
+        node[1] += part
+
+def uniform_mitigation_percentage(budget_percentage)
+    '''Add black balls uniformly to nodes.
+    Budget is a percentage of the total number of balls in the system.
+
+    Returns the number of balls added.
+    '''
+    global nodes
+    # We can't just sum all of the nodes and then multiply by the percentage,
+    # the number gets too large.
+    budget = 0
+    for _, node in enumerate(nodes):
+        budget += (node[0] + node[1]) * budget_percentage
+    uniform_mitigation(budget)
+    return budget
+
 def random_mitigation(budget):
     '''Add black balls randomly to nodes.
     Budget is an absolute number of balls.'''
@@ -356,7 +384,10 @@ def random_mitigation(budget):
 
 def random_mitigation_percentage(budget_percentage):
     '''Add black balls randomly to nodes.
-    Budget is a percentage of the total number of balls in the system'''
+    Budget is a percentage of the total number of balls in the system
+    
+    Returns the number of balls added.
+    '''
     global nodes
     # We can't just sum all of the nodes and then multiply by the percentage,
     # the number gets too large.
@@ -364,6 +395,7 @@ def random_mitigation_percentage(budget_percentage):
     for _, node in enumerate(nodes):
         budget += (node[0] + node[1]) * budget_percentage
     random_mitigation(budget)
+    return budget
 
 def centrality_mitigation(G, budget, fraction):
     '''Distributes black balls to the top {fraction}% most central nodes
@@ -381,13 +413,17 @@ def centrality_mitigation(G, budget, fraction):
 
 def centrality_mitigation_percentage(G, budget_percentage, fraction):
     '''Distributes black balls to the top {fraction}% most central nodes
-    Budget is a percentage of the total number of balls in the system'''
+    Budget is a percentage of the total number of balls in the system
+    
+    Returns the number of balls added.
+    '''
     # We can't just sum all of the nodes and then multiply by the percentage,
     # the number gets too large.
     budget = 0
     for _, node in enumerate(nodes):
         budget += (node[0] + node[1]) * budget_percentage
-    centrality_mitigation(G, budget, fraction)
+    centrality_mitigation(G, int(budget), fraction)
+    return int(budget)
 
 # ==================== Update Function and Helpers ====================
 
@@ -405,9 +441,10 @@ def calculate_proportions(print_out=False):
 def updateFunc(step, G, pos):
     global nodes
     print()
-    ## Apply mitigations
-    #random_mitigation_percentage(0.01)
-    centrality_mitigation_percentage(G, 0.01, 0.1)
+    if step > MITIGATION_DELAY:
+        ## Apply mitigations
+        #random_mitigation_percentage(0.01)
+        mitigation_added = centrality_mitigation_percentage(G, 0.01, 0.1)
     ## Run main simulation step
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
@@ -430,8 +467,10 @@ def updateFunc(step, G, pos):
     num_suicides = remove_suicides(G)
     ## Calculate metrics
     metrics.append(calculte_metrics(G))
-    ## Record Suicides
+    ### Record Suicides
     metrics[-1]["suicides"] = num_suicides
+    ### Record Number of balls added from mitigation
+    metrics[-1]["mitigation added"] = mitigation_added if step > MITIGATION_DELAY else 0
     ## Print
     print(nodes)
     prop_current = calculate_proportions()
@@ -511,6 +550,9 @@ def main():
     plt.plot([metrics_dict["suicial thoughts"] for metrics_dict in metrics])
     plt.title("Number of People with Suicidal Thoughts by time step")
     plt.show()
+
+    total_added = sum([metrics_dict["mitigation added"] for metrics_dict in metrics])
+    print(f"Balls added from mitigation: {total_added}")
 
 if __name__ == "__main__":
     main()
