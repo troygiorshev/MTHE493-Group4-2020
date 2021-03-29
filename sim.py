@@ -346,7 +346,8 @@ def remove_suicides(G):
 
 def uniform_mitigation(budget):
     '''Add black balls uniformly to nodes.
-    Budget is an absolute number of balls.'''
+    Budget is an absolute number of balls.
+    '''
     global nodes
     # Budget is always many orders of magnitude larger than len(nodes),
     # So we'll never be that far off doing it this way
@@ -358,7 +359,7 @@ def uniform_mitigation_percentage(budget_percentage)
     '''Add black balls uniformly to nodes.
     Budget is a percentage of the total number of balls in the system.
 
-    Returns the number of balls added.
+    Returns (approximately) the number of balls added.
     '''
     global nodes
     # We can't just sum all of the nodes and then multiply by the percentage,
@@ -366,12 +367,14 @@ def uniform_mitigation_percentage(budget_percentage)
     budget = 0
     for _, node in enumerate(nodes):
         budget += (node[0] + node[1]) * budget_percentage
-    uniform_mitigation(budget)
-    return budget
+    uniform_mitigation(int(budget))
+    return int(budget)
+
 
 def random_mitigation(budget):
     '''Add black balls randomly to nodes.
-    Budget is an absolute number of balls.'''
+    Budget is an absolute number of balls.
+    '''
     global nodes
     # Eventually this number gets very large.  We need to bound the number of steps.
     step = 1
@@ -394,13 +397,42 @@ def random_mitigation_percentage(budget_percentage):
     budget = 0
     for _, node in enumerate(nodes):
         budget += (node[0] + node[1]) * budget_percentage
-    random_mitigation(budget)
-    return budget
+    random_mitigation(int(budget))
+    return int(budget)
+
+
+def targeted_mitigation(budget, fraction):
+    '''Distribute black balls to the {fraction}% "worst" of the nodes.
+    Budget is an absolute number of balls.
+    '''
+    global nodes
+    proportions = np.array([node[0]/(node[0]+node[1]) for node in nodes])
+    num = int(len(nodes) * fraction)
+    highest = np.argpartition(centralities, -num)[-num:]
+    step = budget // num
+    for i in highest:
+        nodes[i][1] += step
+
+def targeted_mitigation_percentage(budget_percentage, fraction):
+    '''Distributes black balls to the {fraction}% "worst" nodes
+    Budget is a percentage of the total number of balls in the system
+    
+    Returns the number of balls added.
+    '''
+    # We can't just sum all of the nodes and then multiply by the percentage,
+    # the number gets too large.
+    budget = 0
+    for _, node in enumerate(nodes):
+        budget += (node[0] + node[1]) * budget_percentage
+    targeted_mitigation(int(budget), fraction)
+    return int(budget)
+
 
 def centrality_mitigation(G, budget, fraction):
     '''Distributes black balls to the top {fraction}% most central nodes
-    This uses degree centrality right now.
-    Budget is an absolute number of balls.'''
+    This uses closeness centrality.
+    Budget is an absolute number of balls.
+    '''
     global nodes
     centralities = np.zeros(len(nodes), dtype=float)
     for i, val in nx.closeness_centrality(G).items():
