@@ -216,7 +216,11 @@ def ba_graph():
 def clique_graph():
     '''Relaxed caveman graph returns a graph with `l` cliques of size `k`. Edges are
     then randomly rewired with probability `p` to link different cliques'''
-    return nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
+    G = nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
+    while not nx.is_connected(G):
+        # Occationally this graph isn't connected.  So just try again until it is.
+        G = nx.relaxed_caveman_graph(int(NUM_NODES/CLIQUE_SIZE), CLIQUE_SIZE, 0.5, seed=None)
+    return G
 
 def profiles():
     risk_factors = {}
