@@ -419,6 +419,7 @@ def targeted_mitigation_percentage(budget_percentage, fraction):
     
     Returns the number of balls added.
     '''
+    global nodes
     # We can't just sum all of the nodes and then multiply by the percentage,
     # the number gets too large.
     budget = 0
@@ -449,12 +450,61 @@ def centrality_mitigation_percentage(G, budget_percentage, fraction):
     
     Returns the number of balls added.
     '''
+    global nodes
     # We can't just sum all of the nodes and then multiply by the percentage,
     # the number gets too large.
     budget = 0
     for _, node in enumerate(nodes):
         budget += (node[0] + node[1]) * budget_percentage
     centrality_mitigation(G, int(budget), fraction)
+    return int(budget)
+
+
+def neighbors_mitigation(G, budget, fraction):
+    '''Distribute black balls to {fraction}% of the nodes, by forming groups
+    consisting of the "worst" nodes and their neighbors.
+    Budget is an absolute number of balls.
+    '''
+    global nodes
+    is_using = np.full(len(nodes), False)
+    proportions = np.array([node[0]/(node[0]+node[1]) for node in nodes])
+    ordered = np.argsort(proportions)
+    num = int(len(nodes) * fraction)
+    chosen = []
+    for i in ordered:
+        if num == 0:
+            break
+        if not is_using[i]:
+            is_using[i] = True
+            chosen.append(i)
+            num -= 1
+        for n in G[i]:
+            if num == 0:
+                break
+            if not is_using[n]:
+                is_using[n] = True
+                chosen.append(n)
+                num -= 1
+    # Now distribute evenly to the chosen nodes
+    num = int(len(nodes) * fraction)
+    step = budget // num
+    for i in chosen:
+        nodes[i][1] += step
+
+def neighbors_mitigation_percentage(G, budget_percentage, fraction):
+    '''Distribute black balls to {fraction}% of the nodes, by forming groups
+    consisting of the "worst" nodes and their neighbors.
+    Budget is a percentage of the total number of balls in the system
+    
+    Returns the number of balls added.
+    '''
+    global nodes
+    # We can't just sum all of the nodes and then multiply by the percentage,
+    # the number gets too large.
+    budget = 0
+    for _, node in enumerate(nodes):
+        budget += (node[0] + node[1]) * budget_percentage
+    neighbors_mitigation(G, int(budget), fraction)
     return int(budget)
 
 # ==================== Update Function and Helpers ====================
@@ -476,7 +526,7 @@ def updateFunc(step, G, pos):
     if step > MITIGATION_DELAY:
         ## Apply mitigations
         #random_mitigation_percentage(0.01)
-        mitigation_added = centrality_mitigation_percentage(G, 0.01, 0.1)
+        #mitigation_added = centrality_mitigation_percentage(G, 0.01, 0.1)
     ## Run main simulation step
     plt.clf()   # Without this, the colorbars act all weird
     new_nodes = nodes.copy() # Careful, copy the array!
