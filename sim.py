@@ -317,13 +317,12 @@ def remove_suicides(G):
             if completed > 0.5:
                 to_delete.append(i)
                 # Connect all of the node's neighbors to each other
-                # With a 25% chance of connection
+                # With a 35% chance of connection
                 # Empirically this seems to keep the average degree fixed
-                # For BA networks
                 neighbors = list(G[i])
                 for j, node_1 in enumerate(neighbors[:-1]):
                     for node_2 in neighbors[j+1:]:
-                        if random.random() < 0.25:
+                        if random.random() < 0.35:
                             G.add_edge(node_1, node_2)
                 if not nx.is_connected(G):
                     # We've made the graph disconnected.
@@ -582,8 +581,8 @@ def main():
     # Setup
 
     ## Choose Graph Generator
-    #G = ba_graph()
-    G = clique_graph()
+    G = ba_graph()
+    #G = clique_graph()
     #G = houses_graph()
 
     pos = nx.spring_layout(G)
