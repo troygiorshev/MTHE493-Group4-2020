@@ -42,6 +42,8 @@ nodes = np.zeros((NUM_NODES,2), dtype=int)
 # List of metric dictionaries
 metrics = []
 
+avg_degree = []
+
 # ================ Checks / Helper / Metric Functions ================
 
 def check_setup(G):
@@ -101,6 +103,9 @@ def calculte_metrics(G):
     )
 
     return metrics
+
+def calc_avg_degree(G):
+    return sum(d for n, d in G.degree()) / len(G)
 
 # ========================= Graph generators =========================
 
@@ -307,17 +312,19 @@ def remove_suicides(G):
             completed = random.uniform(0,1)
             if completed > 0.5:
                 to_delete.append(i)
-                # For now, connect all of the node's neighbors to each other
-                # With a 10% chance of connection
+                # Connect all of the node's neighbors to each other
+                # With a 25% chance of connection
+                # Empirically this seems to keep the average degree fixed
+                # For BA networks
                 neighbors = list(G[i])
                 for j, node_1 in enumerate(neighbors[:-1]):
                     for node_2 in neighbors[j+1:]:
-                        if random.random() < 0.1:
+                        if random.random() < 0.25:
                             G.add_edge(node_1, node_2)
                 if not nx.is_connected(G):
                     # We've made the graph disconnected.
-                    # For now, fix this by adding connections between neighbors
-                    # until it is connected
+                    # Fix this by finding a single additional connection
+                    # between neighbors that fixes it.
                     done = False
                     for j, node_1 in enumerate(neighbors[:-1]):
                         if done:
@@ -327,6 +334,7 @@ def remove_suicides(G):
                             done = nx.is_connected(G)
                             if done:
                                 break
+                            G.remove_edge(node_1, node_2)
                 G.remove_node(i)
             else:
                 # Suidice attempt occurred, but did not result in death
@@ -355,7 +363,7 @@ def uniform_mitigation(budget):
     for node in nodes:
         node[1] += part
 
-def uniform_mitigation_percentage(budget_percentage)
+def uniform_mitigation_percentage(budget_percentage):
     '''Add black balls uniformly to nodes.
     Budget is a percentage of the total number of balls in the system.
 
@@ -408,7 +416,7 @@ def targeted_mitigation(budget, fraction):
     global nodes
     proportions = np.array([node[0]/(node[0]+node[1]) for node in nodes])
     num = int(len(nodes) * fraction)
-    highest = np.argpartition(centralities, -num)[-num:]
+    highest = np.argpartition(proportions, -num)[-num:]
     step = budget // num
     for i in highest:
         nodes[i][1] += step
@@ -523,8 +531,10 @@ def calculate_proportions(print_out=False):
 def updateFunc(step, G, pos):
     global nodes
     print()
+    avg_degree.append(calc_avg_degree(G))
     if step > MITIGATION_DELAY:
         ## Apply mitigations
+        mitigation_added = 0
         #random_mitigation_percentage(0.01)
         #mitigation_added = centrality_mitigation_percentage(G, 0.01, 0.1)
     ## Run main simulation step
@@ -566,9 +576,12 @@ def main():
     '''Main setup and loop'''
     global nodes
     # Setup
+
+    ## Choose Graph Generator
     #G = ba_graph()
     G = clique_graph()
     #G = houses_graph()
+
     pos = nx.spring_layout(G)
     #init_nodes_profiles()
     init_nodes()
@@ -635,6 +648,11 @@ def main():
 
     total_added = sum([metrics_dict["mitigation added"] for metrics_dict in metrics])
     print(f"Balls added from mitigation: {total_added}")
+
+    plt.plot(avg_degree)
+    plt.title("Average Degree")
+    plt.ylim([0,10])
+    plt.show()
 
 if __name__ == "__main__":
     main()
